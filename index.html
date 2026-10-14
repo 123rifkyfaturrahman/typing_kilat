@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TYPING KILAT // Lomba Ketik Cepat</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <!-- Vue.js 3 -->
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <!-- Google Fonts Monospace -->
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <!-- Hubungkan file CSS eksternal -->
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="bg-[#05080f] text-slate-100 min-h-screen flex flex-col justify-between selection:bg-emerald-500 selection:text-black">
+
+    <div id="app" class="flex flex-col min-h-screen">
+        <!-- HEADER -->
+        <header class="border-b border-slate-800/80 bg-[#090d16]/80 backdrop-blur sticky top-0 z-50">
+            <div class="max-w-6xl mx-auto px-4 py-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div class="flex items-center gap-3">
+                    <div class="w-3.5 h-3.5 rounded-full bg-emerald-500 animate-ping"></div>
+                    <h1 class="text-xl font-bold tracking-wider text-emerald-400 flex items-center gap-2">
+                        <span>&gt;_</span> TYPING_KILAT.<span class="text-xs px-2 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/30 text-emerald-300">RIFKY FATURRAHMAN</span>
+                    </h1>
+                </div>
+
+                <!-- PILIH BAHASA & DURASI -->
+                <div class="flex flex-wrap items-center gap-3">
+                    <!-- Switch Bahasa -->
+                    <div class="bg-[#05080f] border border-slate-800 p-1 rounded-lg flex gap-1">
+                        <button 
+                            @click="setLanguage('id')"
+                            :class="lang === 'id' ? 'bg-emerald-500 text-black font-bold' : 'text-slate-400 hover:text-slate-200'"
+                            class="px-3 py-1.5 rounded text-xs transition uppercase tracking-wider cursor-pointer">
+                            🇮🇩 ID
+                        </button>
+                        <button 
+                            @click="setLanguage('en')"
+                            :class="lang === 'en' ? 'bg-emerald-500 text-black font-bold' : 'text-slate-400 hover:text-slate-200'"
+                            class="px-3 py-1.5 rounded text-xs transition uppercase tracking-wider cursor-pointer">
+                            🇬🇧 EN
+                        </button>
+                    </div>
+
+                    <!-- Switch Waktu -->
+                    <div class="bg-[#05080f] border border-slate-800 p-1 rounded-lg flex gap-1">
+                        <button 
+                            v-for="t in [15, 30, 60]" :key="t"
+                            @click="setTimeLimit(t)"
+                            :class="timeLimit === t ? 'bg-emerald-500 text-black font-bold' : 'text-slate-400 hover:text-slate-200'"
+                            class="px-3 py-1.5 rounded text-xs transition cursor-pointer">
+                            {{ t }}s
+                        </button>
+                    </div>
+
+                    <!-- Toggle Suara -->
+                    <button 
+                        @click="soundEnabled = !soundEnabled"
+                        :class="soundEnabled ? 'border-emerald-500/50 text-emerald-400 bg-emerald-500/10' : 'border-slate-800 text-slate-500 bg-slate-900'"
+                        class="border px-3 py-1.5 rounded-lg text-xs transition flex items-center gap-1.5 cursor-pointer">
+                        <span>{{ soundEnabled ? '🔊 AUDIO: ON' : '🔇 AUDIO: OFF' }}</span>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- KONTEN UTAMA -->
+        <main class="flex-1 max-w-5xl w-full mx-auto px-4 py-8 flex flex-col justify-center">
+            
+            <!-- TAMPILAN KETIKA SELESAI (RESULT SCREEN) -->
+            <div v-if="isFinished" class="bg-[#090d16] border border-emerald-500/40 rounded-2xl p-6 sm:p-10 terminal-glow max-w-2xl mx-auto w-full">
+                <div class="text-center mb-8">
+                    <span class="text-xs uppercase tracking-widest text-emerald-400 bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-500/20">Sesi Lomba Selesai</span>
+                    <h2 class="text-3xl font-bold mt-3 text-slate-100">Statistik Performa Anda</h2>
+                </div>
+
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
+                    <div class="bg-[#05080f] border border-slate-800 p-4 rounded-xl text-center">
+                        <div class="text-slate-400 text-xs mb-1">Kata Benar (Poin)</div>
+                        <div class="text-3xl font-extrabold text-emerald-400">{{ perfectWordsCount }}</div>
+                    </div>
+                    <div class="bg-[#05080f] border border-slate-800 p-4 rounded-xl text-center">
+                        <div class="text-slate-400 text-xs mb-1">WPM (Kecepatan)</div>
+                        <div class="text-3xl font-extrabold text-cyan-400">{{ wpm }}</div>
+                    </div>
+                    <div class="bg-[#05080f] border border-slate-800 p-4 rounded-xl text-center">
+                        <div class="text-slate-400 text-xs mb-1">Akurasi</div>
+                        <div class="text-3xl font-extrabold text-green-400">{{ accuracy }}%</div>
+                    </div>
+                    <div class="bg-[#05080f] border border-slate-800 p-4 rounded-xl text-center">
+                        <div class="text-slate-400 text-xs mb-1">Kata Salah/Typo</div>
+                        <div class="text-3xl font-extrabold text-rose-400">{{ totalCompletedWords - perfectWordsCount }}</div>
+                    </div>
+                </div>
+
+                <div class="flex gap-4">
+                    <button @click="resetTest" class="flex-1 bg-emerald-500 hover:bg-emerald-400 text-black font-bold py-3 px-6 rounded-xl transition duration-200 flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-emerald-500/20">
+                        <span>🔄 Ulangi Lomba (Tab / Esc)</span>
+                    </button>
+                    <button @click="saveScore" class="bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold py-3 px-6 rounded-xl transition duration-200 cursor-pointer border border-slate-700">
+                        💾 Simpan Skor
+                    </button>
+                </div>
+            </div>
+
+            <!-- TAMPILAN AREA KETIK UTAMA -->
+            <div v-else class="space-y-6">
+                <!-- PANEL STATUS ATAS -->
+                <div class="flex items-center justify-between bg-[#090d16] border border-slate-800/80 px-6 py-4 rounded-xl">
+                    <div class="flex items-center gap-6">
+                        <div>
+                            <span class="text-xs text-slate-500 block uppercase">Waktu</span>
+                            <span :class="timeLeft <= 5 ? 'text-rose-500 animate-bounce' : 'text-emerald-400'" class="text-2xl font-bold font-mono">
+                                00:{{ timeLeft < 10 ? '0' + timeLeft : timeLeft }}
+                            </span>
+                        </div>
+                        <div class="h-8 w-px bg-slate-800"></div>
+                        <div>
+                            <span class="text-xs text-slate-500 block uppercase">Kata Benar (Poin)</span>
+                            <span class="text-2xl font-bold text-emerald-400 font-mono">{{ perfectWordsCount }}</span>
+                        </div>
+                        <div class="h-8 w-px bg-slate-800"></div>
+                        <div>
+                            <span class="text-xs text-slate-500 block uppercase">WPM Realtime</span>
+                            <span class="text-xl font-bold text-cyan-400 font-mono">{{ liveWpm }}</span>
+                        </div>
+                    </div>
+
+                    <button @click="resetTest" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 px-4 py-2 rounded-lg border border-slate-700 transition flex items-center gap-1.5 cursor-pointer">
+                        <span>Reset [Esc]</span>
+                    </button>
+                </div>
+
+                <!-- BOX TEKS UTAMA (15 KATA PER BATCH) -->
+                <div 
+                    @click="focusInput"
+                    class="relative bg-[#090d16] border border-slate-800 focus-within:border-emerald-500/60 rounded-2xl p-6 sm:p-10 transition duration-300 shadow-2xl cursor-text min-h-[200px] flex flex-wrap items-center content-center gap-x-3 gap-y-3">
+                    
+                    <!-- Render 15 Kata Saat Ini -->
+                    <span 
+                        v-for="(wordObj, wIdx) in currentBatchWords" 
+                        :key="wIdx" 
+                        class="inline-flex flex-wrap text-xl sm:text-2xl font-mono leading-relaxed">
+                        <span 
+                            v-for="(char, cIdx) in wordObj.chars" 
+                            :key="cIdx"
+                            :class="{
+                                'text-emerald-400 font-bold': char.status === 'correct',
+                                'text-rose-400 bg-rose-950/60 border-b-2 border-rose-500 font-bold': char.status === 'incorrect',
+                                'text-slate-500': char.status === 'pending',
+                                'border-l-2 border-emerald-400 bg-emerald-500/20 animate-pulse': isCurrentChar(wIdx, cIdx)
+                            }"
+                            class="transition-colors duration-75 px-[1px]">
+                            {{ char.val }}
+                        </span>
+                    </span>
+
+                    <!-- Hidden Input dengan penanganan responsivitas kilat -->
+                    <input 
+                        ref="typingInput"
+                        type="text" 
+                        v-model="currentInput"
+                        @input="handleInput"
+                        @keydown="handleKeyDown"
+                        class="absolute opacity-0 pointer-events-none"
+                        autocomplete="off"
+                        autocorrect="off"
+                        autocapitalize="off"
+                        spellcheck="false">
+                </div>
+            </div>
+
+            <!-- LEADERBOARD LOKAL (DIURUTKAN KATA BENAR TERBANYAK) -->
+            <div class="mt-12 bg-[#090d16] border border-slate-800/80 rounded-2xl p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-sm font-bold uppercase tracking-wider text-slate-400 flex items-center gap-2">
+                        <span>🏆</span> Papan Skor (Peringkat Kata Benar Terbanyak)
+                    </h3>
+                    <button 
+                        v-if="leaderboard.length > 0"
+                        @click="clearLeaderboard"
+                        class="text-xs bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 px-3 py-1 rounded-lg transition cursor-pointer flex items-center gap-1">
+                        <span>🗑️ Hapus Skor</span>
+                    </button>
+                </div>
+
+                <div v-if="leaderboard.length === 0" class="text-xs text-slate-600 italic">
+                    Belum ada skor tersimpan. Selesaikan lomba dan simpan skor Anda!
+                </div>
+                <div v-else class="space-y-2">
+                    <div v-for="(score, index) in sortedLeaderboard" :key="index" class="flex items-center justify-between bg-[#05080f] px-4 py-2.5 rounded-xl border border-slate-800/50 text-xs">
+                        <div class="flex items-center gap-3">
+                            <span :class="{
+                                'text-amber-400 font-extrabold': index === 0,
+                                'text-slate-300 font-bold': index === 1,
+                                'text-amber-600 font-bold': index === 2,
+                                'text-emerald-400 font-bold': index > 2
+                            }">#{{ index + 1 }}</span>
+                            <span class="text-slate-300 uppercase font-mono">Bahasa: {{ score.lang }} ({{ score.time }}s)</span>
+                        </div>
+                        <div class="flex gap-4 font-mono">
+                            <span class="text-emerald-400 font-bold">{{ score.perfectWords }} Kata Benar</span>
+                            <span class="text-cyan-400 font-bold">{{ score.wpm }} WPM</span>
+                            <span class="text-slate-400">Akurasi: {{ score.accuracy }}%</span>
+                            <span class="text-slate-500">{{ score.date }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- FOOTER -->
+        <footer class="border-t border-slate-800/80 py-4 text-center text-xs text-slate-600">
+            TYPING_KILAT Karya Rifky Faturrahman. 
+        </footer>
+    </div>
+
+    <!-- Hubungkan file JS eksternal -->
+    <script src="script.js"></script>
+</body>
+</html>
